@@ -5,21 +5,20 @@
 #define local_persist static
 #define global_variable static
 
+///////////////////////////////////////////////////////////////
+/// Variables
+//////////////////////////////////////////////////////////////
+
 global_variable bool Running;
 
 global_variable BITMAPINFO BitmapInfo;
 global_variable void *BitmapMemory;
-global_variable HBITMAP BitmapHandle;
-global_variable HDC BitmapDeviceContext;
+
+///////////////////////////////////////////////////////////////
+/// Functions
+///////////////////////////////////////////////////////////////
 
 internal void Win32ResizeDIBSection(int Width, int Height) {
-  if (BitmapHandle) {
-    DeleteObject(BitmapHandle);
-  }
-  if (!BitmapDeviceContext) {
-
-    BitmapDeviceContext = CreateCompatibleDC(0);
-  }
   BitmapInfo.bmiHeader.biSize = sizeof(BitmapInfo.bmiHeader);
   BitmapInfo.bmiHeader.biWidth = Width;
   BitmapInfo.bmiHeader.biHeight = Height;
@@ -27,8 +26,9 @@ internal void Win32ResizeDIBSection(int Width, int Height) {
   BitmapInfo.bmiHeader.biBitCount = 32;
   BitmapInfo.bmiHeader.biCompression = BI_RGB;
 
-  BitmapHandle = CreateDIBSection(BitmapDeviceContext, &BitmapInfo,
-                                  DIB_RGB_COLORS, &BitmapMemory, 0, 0);
+  int BytesPerPixel = 4;
+  int BitmapMemorySize = BytesPerPixel * (Width * Height);
+  BitmapMemory = (BitmapMemorySize);
 }
 
 internal void Win32UpdateWindow(HDC DeviceContext, int X, int Y, int Width,
@@ -37,9 +37,14 @@ internal void Win32UpdateWindow(HDC DeviceContext, int X, int Y, int Width,
                 BitmapMemory, &BitmapInfo, DIB_RGB_COLORS, SRCCOPY);
 }
 
+///////////////////////////////////////////////////////////////
+/// Win32MainWindowCallback
+//////////////////////////////////////////////////////////////
+
 LRESULT CALLBACK Win32MainWindowCallback(HWND Window, UINT Message,
                                          WPARAM WParam, LPARAM LParam) {
   LRESULT Result = 0;
+
   switch (Message) {
   case WM_SIZE: {
     RECT ClientRect;
@@ -78,6 +83,10 @@ LRESULT CALLBACK Win32MainWindowCallback(HWND Window, UINT Message,
   }
   return (Result);
 }
+
+///////////////////////////////////////////////////////////////
+/// WinMain
+//////////////////////////////////////////////////////////////
 
 int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance,
                      LPSTR CommandLine, int ShowCode) {

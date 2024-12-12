@@ -1,6 +1,6 @@
 #include <stdint.h>
 #include <windows.h>
-#include <winuser.h>
+#include <xinput.h>
 
 #define internal static
 #define local_persist static
@@ -15,6 +15,34 @@ typedef int8_t int8;
 typedef int16_t int16;
 typedef int32_t int32;
 typedef int64_t int64;
+
+///////////////////////////////////////////////////////////////
+/// Xinput fix
+//////////////////////////////////////////////////////////////
+
+#define X_INPUT_GET_STATE(name)                                                \
+  DWORD WINAPI name(DWORD dwUserIndex, XINPUT_STATE *pState)
+typedef X_INPUT_GET_STATE(x_input_get_state);
+X_INPUT_GET_STATE(XInputGetStateStub) { return (0); }
+global_variable x_input_get_state *XInputGetState_ = XInputGetStateStub;
+#define XInputGetState XInputGetState_
+
+#define X_INPUT_SET_STATE(name)                                                \
+  DWORD WINAPI name(DWORD dwUserIndex, XINPUT_VIBRATION *pVibration)
+typedef X_INPUT_SET_STATE(x_input_set_state);
+X_INPUT_SET_STATE(XInputSetStateStub) { return (0); }
+global_variable x_input_set_state *XInputSetState_ = XInputSetStateStub;
+#define XInputSetState XInputSetState_
+
+internal void Win32LoadXInput(void) {
+  HMODULE XInputLibrary = LoadLibrary("xinput1_3.dll");
+  if (XInputLibrary) {
+    XInputGetState =
+        (x_input_get_state *)GetProcAddress(XInputLibrary, "XInputeGetState");
+    XInputSetState =
+        (x_input_set_state *)GetProcAddress(XInputLibrary, "XInputeSetState");
+  }
+}
 
 ///////////////////////////////////////////////////////////////
 /// Structs
@@ -34,7 +62,7 @@ struct win32_window_dimension {
   int Height;
 };
 
-win32_window_dimension Win32GetWindowDimension(HWND Window) {
+internal win32_window_dimension Win32GetWindowDimension(HWND Window) {
   win32_window_dimension Result;
   RECT ClientRect;
   GetClientRect(Window, &ClientRect);
@@ -164,7 +192,7 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance,
                      LPSTR CommandLine, int ShowCode) {
 
   WNDCLASSA WindowClass = {};
-
+  Win32LoadXInput();
   Win32ResizeDIBSection(&GlobalBackBuffer, 1280, 720);
   WindowClass.style = CS_HREDRAW | CS_VREDRAW;
   WindowClass.lpfnWndProc = Win32MainWindowCallback;
@@ -189,7 +217,43 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance,
           TranslateMessage(&Message);
           DispatchMessage(&Message);
         }
+        DWORD dwResult;
+        for (DWORD ControllerIndex = 0; ControllerIndex < XUSER_MAX_COUNT;
+             ControllerIndex++) {
 
+          XINPUT_STATE ControllerState;
+          ZeroMemory(&ControllerState, sizeof(XINPUT_STATE));
+
+          dwResult = XInputGetState(ControllerIndex, &ControllerState);
+
+          if (dwResult == ERROR_SUCCESS) {
+            XINPUT_GAMEPAD *Pad = &ControllerState.Gamepad;
+
+            bool Up = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_UP);
+            bool Down = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN);
+            bool Left = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT);
+            bool Right = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT);
+            bool Start = (Pad->wButtons & XINPUT_GAMEPAD_START);
+            bool Back = (Pad->wButtons & XINPUT_GAMEPAD_BACK);
+            bool LeftShoulder = (Pad->wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER);
+            bool RightShoulder =
+                (Pad->wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER);
+            bool AButton = (Pad->wButtons & XINPUT_GAMEPAD_A);
+            bool BButton = (Pad->wButtons & XINPUT_GAMEPAD_B);
+            bool XButton = (Pad->wButtons & XINPUT_GAMEPAD_X);
+            bool YButton = (Pad->wButtons & XINPUT_GAMEPAD_Y);
+
+            int16 StickX = Pad->sThumbLX;
+            int16 StickY = Pad->sThumbLY;
+
+            if (AButton) {
+              YOffset += 2;
+            }
+            // Controller is connected
+          } else {
+            // Controller is not connected
+          }
+        }
         HDC DeviceContext = GetDC(Window);
         win32_window_dimension Dimension = Win32GetWindowDimension(Window);
         RenderWeirdGradient(GlobalBackBuffer, XOffset, YOffset);

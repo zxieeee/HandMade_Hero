@@ -149,7 +149,7 @@ LRESULT CALLBACK Win32MainWindowCallback(HWND Window, UINT Message,
     OutputDebugStringA("WM_SIZE\n");
   } break;
 
-  case WM_DESTROY: {
+  // case WM_DESTROY: {
     Running = false;
     OutputDebugStringA("WM_DESTROY\n");
   } break;
@@ -162,6 +162,16 @@ LRESULT CALLBACK Win32MainWindowCallback(HWND Window, UINT Message,
   case WM_ACTIVATEAPP: {
     OutputDebugStringA("WM_ACTIVATEAPP\n");
   } break;
+
+  case WM_SYSKEYDOWN:
+  case WM_SYSKEYUP:
+  case WM_KEYDOWN:
+  case WM_KEYUP:
+  {
+    uint32 VKCode = WParam;
+    if(VKCode == "W")
+  }
+  
 
   case WM_PAINT: {
     PAINTSTRUCT Paint;

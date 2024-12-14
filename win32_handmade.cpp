@@ -38,9 +38,7 @@ global_variable x_input_set_state *XInputSetState_ = XInputSetStateStub;
 #define XInputSetState XInputSetState_
 
 internal void Win32LoadXInput(void) {
-
   HMODULE XInputLibrary = LoadLibraryA("xinput1_4.dll");
-
   if (XInputLibrary) {
     XInputGetState =
         (x_input_get_state *)GetProcAddress(XInputLibrary, "XInputGetState");
@@ -51,35 +49,36 @@ internal void Win32LoadXInput(void) {
 
 //------------------------------Direct Sound-----------------------//
 
-#define DIRECT_SOUND_CREATE(name)                                              \
-  HRESULT WINAPI name(LPCGUID pcGuidDevice, LPDIRECTSOUND *ppDS,               \
-                      LPUNKNOWN pUnkOuter);
-typedef DIRECT_SOUND_CREATE(direct_sound_create);
-
-internal void Win32InitDSound(void) {
-  HMODULE DSoundLibrary = LoadLibraryA("dsound.dll");
-  if (DSoundLibrary) {
-    direct_sound_create *DirectSoundCreate =
-        (direct_sound_create *)GetProcAddress(DSoundLibrary,
-                                              "DirectSoundCreate");
-    LPDIRECTSOUND DirectSound;
-    if (DirectSoundCreate && (DirectSoundCreate(0, &DirectSound, 0))) {
-
-      if (SUCCEEDED(
-              DirectSound->SetCooperativeLevel(HWND Window, DSSCL_PRIORITY))) {
-        LPCDSBUFFERDESC BufferDescription;
-        LPDIRECTSOUNDBUFFER PrimaryBuffer;
-
-        if (SUCCEEDED(
-                CreateSoundBuffer(&BufferDescription, &PrimaryBuffer, 0))) {
-        }
-      }
-    }
-  } else {
-  }
-  else {
-  }
-}
+// #define DIRECT_SOUND_CREATE(name)                                              \
+//   HRESULT WINAPI name(LPCGUID pcGuidDevice, LPDIRECTSOUND *ppDS,               \
+//                       LPUNKNOWN pUnkOuter);
+// typedef DIRECT_SOUND_CREATE(direct_sound_create);
+//
+// internal void Win32InitDSound(void) {
+//   HMODULE DSoundLibrary = LoadLibraryA("dsound.dll");
+//   if (DSoundLibrary) {
+//     direct_sound_create *DirectSoundCreate =
+//         (direct_sound_create *)GetProcAddress(DSoundLibrary,
+//                                               "DirectSoundCreate");
+//     LPDIRECTSOUND DirectSound;
+//     if (DirectSoundCreate && (DirectSoundCreate(0, &DirectSound, 0))) {
+//
+//       if (SUCCEEDED(
+//               DirectSound->SetCooperativeLevel(HWND Window, DSSCL_PRIORITY)))
+//               {
+//         LPCDSBUFFERDESC BufferDescription;
+//         LPDIRECTSOUNDBUFFER PrimaryBuffer;
+//
+//         if (SUCCEEDED(
+//                 CreateSoundBuffer(&BufferDescription, &PrimaryBuffer, 0))) {
+//         }
+//       }
+//     }
+//   } else {
+//   }
+//   else {
+//   }
+// }
 
 ///////////////////////////////////////////////////////////////
 /// Structs
@@ -209,7 +208,6 @@ LRESULT CALLBACK Win32MainWindowCallback(HWND Window, UINT Message,
     uint32 VKCode = WParam;
     bool WasDown = ((LParam & (1 << 30)) != 0);
     bool IsDown = ((LParam & (1 << 31)) == 0);
-
     if (WasDown != IsDown) {
       if (VKCode == 'W') {
 
@@ -240,7 +238,7 @@ LRESULT CALLBACK Win32MainWindowCallback(HWND Window, UINT Message,
         Running = false;
       }
     }
-  } break;
+  }
   case WM_PAINT: {
     PAINTSTRUCT Paint;
     HDC DeviceContext = BeginPaint(Window, &Paint);
@@ -289,7 +287,7 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance,
       int XOffset = 0;
       int YOffset = 0;
 
-      Win32InitDSound();
+      // Win32InitDSound();
       while (Running) {
         while (PeekMessage(&Message, 0, 0, 0, PM_REMOVE)) {
           if (Message.message == WM_QUIT) {
@@ -336,7 +334,6 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance,
         RenderWeirdGradient(&GlobalBackBuffer, XOffset, YOffset);
         Win32DisplayBufferInWindow(&GlobalBackBuffer, DeviceContext,
                                    Dimension.Width, Dimension.Height);
-        ReleaseDC(Window, DeviceContext);
         ++XOffset;
       }
     }

@@ -3,3 +3,5 @@
 *.pdb
 *.exe
 exec.bat
+.vs
+

@@ -1,3 +1,4 @@
+#include <dsound.h>
 #include <stdint.h>
 #include <windows.h>
 #include <xinput.h>
@@ -15,11 +16,13 @@ typedef int8_t int8;
 typedef int16_t int16;
 typedef int32_t int32;
 typedef int64_t int64;
+typedef int32 bool32;
 
 ///////////////////////////////////////////////////////////////
-/// Xinput fix
+///  Loading Libraries
 //////////////////////////////////////////////////////////////
 
+//------------------------------XInput-------------------------//
 #define X_INPUT_GET_STATE(name)                                                \
   DWORD WINAPI name(DWORD dwUserIndex, XINPUT_STATE *pState)
 typedef X_INPUT_GET_STATE(x_input_get_state);
@@ -35,17 +38,46 @@ global_variable x_input_set_state *XInputSetState_ = XInputSetStateStub;
 #define XInputSetState XInputSetState_
 
 internal void Win32LoadXInput(void) {
-  
-  HMODULE XInputLibrary = LoadLibrary("xinput1_4.dll");
 
-  if(!XInputLibrary){
-  HMODULE XInputLibrary = LoadLibrary("xinput1_3.dll");
-  }
+  HMODULE XInputLibrary = LoadLibraryA("xinput1_4.dll");
+
   if (XInputLibrary) {
     XInputGetState =
-        (x_input_get_state *)GetProcAddress(XInputLibrary, "XInputeGetState");
+        (x_input_get_state *)GetProcAddress(XInputLibrary, "XInputGetState");
     XInputSetState =
-        (x_input_set_state *)GetProcAddress(XInputLibrary, "XInputeSetState");
+        (x_input_set_state *)GetProcAddress(XInputLibrary, "XInputSetState");
+  }
+}
+
+//------------------------------Direct Sound-----------------------//
+
+#define DIRECT_SOUND_CREATE(name)                                              \
+  HRESULT WINAPI name(LPCGUID pcGuidDevice, LPDIRECTSOUND *ppDS,               \
+                      LPUNKNOWN pUnkOuter);
+typedef DIRECT_SOUND_CREATE(direct_sound_create);
+
+internal void Win32InitDSound(void) {
+  HMODULE DSoundLibrary = LoadLibraryA("dsound.dll");
+  if (DSoundLibrary) {
+    direct_sound_create *DirectSoundCreate =
+        (direct_sound_create *)GetProcAddress(DSoundLibrary,
+                                              "DirectSoundCreate");
+    LPDIRECTSOUND DirectSound;
+    if (DirectSoundCreate && (DirectSoundCreate(0, &DirectSound, 0))) {
+
+      if (SUCCEEDED(
+              DirectSound->SetCooperativeLevel(HWND Window, DSSCL_PRIORITY))) {
+        LPCDSBUFFERDESC BufferDescription;
+        LPDIRECTSOUNDBUFFER PrimaryBuffer;
+
+        if (SUCCEEDED(
+                CreateSoundBuffer(&BufferDescription, &PrimaryBuffer, 0))) {
+        }
+      }
+    }
+  } else {
+  }
+  else {
   }
 }
 
@@ -101,7 +133,7 @@ internal void RenderWeirdGradient(win32_offscreen_buffer *Buffer, int XOffset,
 
       *Pixel++ = ((Green << 8) | Blue);
     }
-    Row += Buffer.Pitch;
+    Row += Buffer->Pitch;
   }
 }
 
@@ -131,10 +163,9 @@ internal void Win32ResizeDIBSection(win32_offscreen_buffer *Buffer, int Width,
   Buffer->Pitch = Buffer->Width * Buffer->BytesPerPixel;
 }
 
-internal void Win32DisplayBufferInWindow(win32_offscreen_buffer *Buffer, HDC DeviceContext, int WindowWidth,
-                                         int WindowHeight
-                                          ){
-                                         
+internal void Win32DisplayBufferInWindow(win32_offscreen_buffer *Buffer,
+                                         HDC DeviceContext, int WindowWidth,
+                                         int WindowHeight) {
 
   StretchDIBits(DeviceContext, 0, 0, WindowWidth, WindowHeight, 0, 0,
                 Buffer->Width, Buffer->Height, Buffer->Memory, &Buffer->Info,
@@ -154,7 +185,7 @@ LRESULT CALLBACK Win32MainWindowCallback(HWND Window, UINT Message,
     OutputDebugStringA("WM_SIZE\n");
   } break;
 
-  // case WM_DESTROY: {
+  case WM_DESTROY: {
     Running = false;
     OutputDebugStringA("WM_DESTROY\n");
   } break;
@@ -169,58 +200,47 @@ LRESULT CALLBACK Win32MainWindowCallback(HWND Window, UINT Message,
   } break;
 
   case WM_SYSKEYDOWN:
+
   case WM_SYSKEYUP:
+
   case WM_KEYDOWN:
-  case WM_KEYUP:
-  {
+
+  case WM_KEYUP: {
     uint32 VKCode = WParam;
-    bool WasDown = ((LParam & (1<<30))!=0);
-    bool IsDown = ((LParam & (1<<31))==0);
+    bool WasDown = ((LParam & (1 << 30)) != 0);
+    bool IsDown = ((LParam & (1 << 31)) == 0);
 
-if (WasDown != IsDown){
-    if(VKCode == "W"){
-      
-    }
-    else if(VKCode == "A"){
-     
-    } 
-    else if(VKCode == "S"){
-      
-    }
-    else if(VKCode == "D"){
-      
-    }
-    else if(VKCode == "Q"){
-      
-    }
-    else if(VKCode == "E"){
-      
-    }
-    else if(VKCode == VK_UP){
-      
-    }
-    else if(VKCode == VK_LEFT){
-      
-    }
-    else if(VKCode == VK_DOWN){
-      
-    }
-    else if(VKCode == VK_RIGHT){
-      
-    }
-    else if(VKCode == VK_ESCAPE){
-      
-    }
-    else if(VKCode == VK_SPACE){
-      
-    } 
-    bool AltKeyWasDown = ((LParam & (1<<29))!=0);
-    if (( VKCode == VK_F4) && AltKeyWasDown){
-      Running = false;
-    }
+    if (WasDown != IsDown) {
+      if (VKCode == 'W') {
 
-   }
-}
+      } else if (VKCode == 'A') {
+
+      } else if (VKCode == 'S') {
+
+      } else if (VKCode == 'D') {
+
+      } else if (VKCode == 'Q') {
+
+      } else if (VKCode == 'E') {
+
+      } else if (VKCode == VK_UP) {
+
+      } else if (VKCode == VK_LEFT) {
+
+      } else if (VKCode == VK_DOWN) {
+
+      } else if (VKCode == VK_RIGHT) {
+
+      } else if (VKCode == VK_ESCAPE) {
+
+      } else if (VKCode == VK_SPACE) {
+      }
+      bool AltKeyWasDown = ((LParam & (1 << 29)) != 0);
+      if ((VKCode == VK_F4) && AltKeyWasDown) {
+        Running = false;
+      }
+    }
+  } break;
   case WM_PAINT: {
     PAINTSTRUCT Paint;
     HDC DeviceContext = BeginPaint(Window, &Paint);
@@ -230,8 +250,8 @@ if (WasDown != IsDown){
     int Height = Paint.rcPaint.bottom - Paint.rcPaint.top;
 
     win32_window_dimension Dimension = Win32GetWindowDimension(Window);
-    Win32DisplayBufferInWindow(GlobalBackBuffer, DeviceContext, Dimension->Width, Dimension->Height,
-                               );
+    Win32DisplayBufferInWindow(&GlobalBackBuffer, DeviceContext,
+                               Dimension.Width, Dimension.Height);
     EndPaint(Window, &Paint);
   } break;
   default: {
@@ -263,10 +283,13 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance,
                                  CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
                                  CW_USEDEFAULT, 0, 0, Instance, 0);
     if (Window) {
+      HDC DeviceContext = GetDC(Window);
       Running = true;
       MSG Message;
       int XOffset = 0;
       int YOffset = 0;
+
+      Win32InitDSound();
       while (Running) {
         while (PeekMessage(&Message, 0, 0, 0, PM_REMOVE)) {
           if (Message.message == WM_QUIT) {
@@ -304,23 +327,17 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance,
             int16 StickX = Pad->sThumbLX;
             int16 StickY = Pad->sThumbLY;
 
-            if (AButton) {
-              YOffset += 2;
-            }
             // Controller is connected
           } else {
             // Controller is not connected
           }
         }
-        HDC DeviceContext = GetDC(Window);
         win32_window_dimension Dimension = Win32GetWindowDimension(Window);
         RenderWeirdGradient(&GlobalBackBuffer, XOffset, YOffset);
-        Win32DisplayBufferInWindow(&GlobalBackBuffer,DeviceContext, Dimension->Width,
-                                   Dimension.Height  
-        );
+        Win32DisplayBufferInWindow(&GlobalBackBuffer, DeviceContext,
+                                   Dimension.Width, Dimension.Height);
         ReleaseDC(Window, DeviceContext);
         ++XOffset;
-        // YOffset += 2;
       }
     }
   } else {

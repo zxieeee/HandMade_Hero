@@ -1,8 +1,10 @@
+#include <cmath>
 #include <dsound.h>
-#include <math.h>
-#include <minwindef.h>
+#include <profileapi.h>
 #include <stdint.h>
 #include <windows.h>
+#include <winnt.h>
+#include <winuser.h>
 #include <xinput.h>
 
 #define internal static
@@ -352,6 +354,10 @@ LRESULT CALLBACK Win32MainWindowCallback(HWND Window, UINT Message,
 int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance,
                      LPSTR CommandLine, int ShowCode) {
 
+  LARGE_INTEGER PerfCountFrequencyResult;
+  QueryPerformanceCounter(&PerfCountFrequencyResult);
+  int64 PerfCountFrequency = PerfCountFrequencyResult.QuadPart;
+
   WNDCLASSA WindowClass = {};
   Win32LoadXInput();
   Win32ResizeDIBSection(&GlobalBackBuffer, 1280, 720);
@@ -359,6 +365,7 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance,
   WindowClass.lpfnWndProc = Win32MainWindowCallback;
   WindowClass.hInstance = Instance;
   WindowClass.lpszClassName = "HandmadeHeroWindowClass";
+  BOOL WINAPI QueryPerformanceCounter(LARGE_INTEGER * lpFrequency);
 
   if (RegisterClass(&WindowClass)) {
     HWND Window = CreateWindowEx(0, WindowClass.lpszClassName, "Handmade Hero",
@@ -389,7 +396,13 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance,
                       SoundOutput.SecondaryBufferSize);
       Win32FillSoundBuffer(&SoundOutput, 0, SoundOutput.SecondaryBufferSize);
       GlobalSecondaryBuffer->Play(0, 0, DSBPLAY_LOOPING);
+
+      LARGE_INTEGER LastCounter;
+      QueryPerformanceCounter(&LastCounter);
+      int64 LastCycleCount = __rdtsc();
+
       while (Running) {
+
         while (PeekMessage(&Message, 0, 0, 0, PM_REMOVE)) {
           if (Message.message == WM_QUIT) {
             Running = false;
@@ -460,11 +473,26 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance,
         RenderWeirdGradient(&GlobalBackBuffer, XOffset, YOffset);
         Win32DisplayBufferInWindow(&GlobalBackBuffer, DeviceContext,
                                    Dimension.Width, Dimension.Height);
-      }
-    }
 
-    else {
+        LARGE_INTEGER EndCounter;
+        QueryPerformanceCounter(&EndCounter);
+        // TODO: Display the value here
+
+        int64 EndCycleCount = __rdtsc();
+        int64 CyclesElapsed = EndCycleCount - LastCycleCount;
+        int64 CounterElapsed = EndCounter.QuadPart - LastCounter.QuadPart;
+        int64 MSPerFrame = ((1000 * CounterElapsed) / PerfCountFrequency);
+        int32 FPS = PerfCountFrequency / CounterElapsed;
+
+        // NOTE: last mark
+        char Buffer[256];
+        wsprintf(Buffer, "%dms/f,%df/s", MSPerFrame, FPS);
+        OutputDebugStringA(Buffer);
+        LastCounter = EndCounter;
+        LastCycleCount = EndCycleCount;
+      }
+    } else {
     }
-    return (0);
   }
+  return (0);
 }

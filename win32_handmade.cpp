@@ -1,16 +1,15 @@
+#include <windows.h>
+#define Pi32 3.14159265359f
+#include "handmade.cpp"
 #include <cmath>
 #include <dsound.h>
 #include <profileapi.h>
 #include <stdint.h>
-#include <windows.h>
-#include <winnt.h>
-#include <winuser.h>
 #include <xinput.h>
 
 #define internal static
 #define local_persist static
 #define global_variable static
-#define Pi32 3.14159265359f
 
 typedef uint8_t uint8;
 typedef uint16_t uint16;
@@ -25,6 +24,8 @@ typedef int32 bool32;
 
 typedef float real32;
 typedef double real64;
+
+#include "handmade.cpp"
 ///////////////////////////////////////////////////////////////
 ///  Loading Libraries
 //////////////////////////////////////////////////////////////
@@ -399,7 +400,7 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance,
 
       LARGE_INTEGER LastCounter;
       QueryPerformanceCounter(&LastCounter);
-      int64 LastCycleCount = __rdtsc();
+      uint64 LastCycleCount = __rdtsc();
 
       while (Running) {
 
@@ -478,8 +479,8 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance,
         QueryPerformanceCounter(&EndCounter);
         // TODO: Display the value here
 
-        int64 EndCycleCount = __rdtsc();
-        int64 CyclesElapsed = EndCycleCount - LastCycleCount;
+        uint64 EndCycleCount = __rdtsc();
+        uint64 CyclesElapsed = EndCycleCount - LastCycleCount;
         int64 CounterElapsed = EndCounter.QuadPart - LastCounter.QuadPart;
         int64 MSPerFrame = ((1000 * CounterElapsed) / PerfCountFrequency);
         int32 FPS = PerfCountFrequency / CounterElapsed;

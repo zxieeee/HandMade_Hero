@@ -1,31 +1,12 @@
+
+#include "handmade.cpp"
 #include <windows.h>
 #define Pi32 3.14159265359f
-#include "handmade.cpp"
 #include <cmath>
 #include <dsound.h>
 #include <profileapi.h>
-#include <stdint.h>
 #include <xinput.h>
 
-#define internal static
-#define local_persist static
-#define global_variable static
-
-typedef uint8_t uint8;
-typedef uint16_t uint16;
-typedef uint32_t uint32;
-typedef uint64_t uint64;
-
-typedef int8_t int8;
-typedef int16_t int16;
-typedef int32_t int32;
-typedef int64_t int64;
-typedef int32 bool32;
-
-typedef float real32;
-typedef double real64;
-
-#include "handmade.cpp"
 ///////////////////////////////////////////////////////////////
 ///  Loading Libraries
 //////////////////////////////////////////////////////////////
@@ -122,6 +103,15 @@ internal void Win32InitDSound(HWND Window, int32 SamplesPerSecond,
 ///////////////////////////////////////////////////////////////
 /// Structs
 //////////////////////////////////////////////////////////////
+
+struct win32_offscreen_buffer {
+  BITMAPINFO Info;
+  void *Memory;
+  int Width;
+  int Height;
+  int Pitch;
+  int BytesPerPixel = 4;
+};
 struct win32_sound_output {
   uint32 RunningSampleIndex;
   int SamplesPerSecond;
@@ -130,14 +120,6 @@ struct win32_sound_output {
   int BytesPerSample;
   int WavePeriod;
   int SecondaryBufferSize;
-};
-struct win32_offscreen_buffer {
-  BITMAPINFO Info;
-  void *Memory;
-  int Width;
-  int Height;
-  int Pitch;
-  int BytesPerPixel = 4;
 };
 
 struct win32_window_dimension {
@@ -165,23 +147,6 @@ global_variable win32_offscreen_buffer GlobalBackBuffer;
 ///////////////////////////////////////////////////////////////
 /// Functions
 ///////////////////////////////////////////////////////////////
-
-internal void RenderWeirdGradient(win32_offscreen_buffer *Buffer, int XOffset,
-                                  int YOffset) {
-  int Width = Buffer->Width;
-  int Height = Buffer->Height;
-  uint8 *Row = (uint8 *)Buffer->Memory;
-  for (int Y = 0; Y < Buffer->Height; ++Y) {
-    uint32 *Pixel = (uint32 *)Row;
-    for (int X = 0; X < Buffer->Width; ++X) {
-      uint8 Blue = (X + XOffset);
-      uint8 Green = (Y + YOffset);
-
-      *Pixel++ = ((Green << 8) | Blue);
-    }
-    Row += Buffer->Pitch;
-  }
-}
 
 internal void Win32FillSoundBuffer(win32_sound_output *SoundOutput,
                                    DWORD ByteToLock, DWORD BytesToWrite) {
@@ -341,7 +306,6 @@ LRESULT CALLBACK Win32MainWindowCallback(HWND Window, UINT Message,
     EndPaint(Window, &Paint);
   } break;
   default: {
-    /*OutputDebugStringA("default");*/
     Result = DefWindowProc(Window, Message, WParam, LParam);
   } break;
   }
@@ -467,11 +431,17 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance,
           }
           Win32FillSoundBuffer(&SoundOutput, ByteToLock, BytesToWrite);
         }
+        game_offscreen_buffer Buffer = {};
+        Buffer.Memory = GlobalBackBuffer.Memory;
+        Buffer.Width = GlobalBackBuffer.Width;
+        Buffer.Height = GlobalBackBuffer.Height;
+        Buffer.Pitch = GlobalBackBuffer.Pitch;
 
         XOffset++;
         YOffset++;
         win32_window_dimension Dimension = Win32GetWindowDimension(Window);
-        RenderWeirdGradient(&GlobalBackBuffer, XOffset, YOffset);
+        GameUpdateAndRender(&Buffer, XOffset, YOffset);
+        // RenderWeirdGradient(&GlobalBackBuffer, XOffset, YOffset);
         Win32DisplayBufferInWindow(&GlobalBackBuffer, DeviceContext,
                                    Dimension.Width, Dimension.Height);
 
@@ -486,9 +456,9 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance,
         int32 FPS = PerfCountFrequency / CounterElapsed;
 
         // NOTE: last mark
-        char Buffer[256];
-        wsprintf(Buffer, "%dms/f,%df/s", MSPerFrame, FPS);
-        OutputDebugStringA(Buffer);
+        // char Buffer[256];
+        // wsprintf(Buffer, "%dms/f,%df/s", MSPerFrame, FPS);
+        // OutputDebugStringA(Buffer);
         LastCounter = EndCounter;
         LastCycleCount = EndCycleCount;
       }

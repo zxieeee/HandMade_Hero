@@ -1,10 +1,8 @@
-
 #include "handmade.cpp"
-#include <windows.h>
-#define Pi32 3.14159265359f
-#include <cmath>
+#include "handmade.h"
 #include <dsound.h>
 #include <profileapi.h>
+#include <windows.h>
 #include <xinput.h>
 
 ///////////////////////////////////////////////////////////////
@@ -439,8 +437,11 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance,
 
         XOffset++;
         YOffset++;
+
+        game_sound_output_buffer SoundBuffer = {};
+
+        GameUpdateAndRender(&Buffer, XOffset, YOffset, &SoundBuffer);
         win32_window_dimension Dimension = Win32GetWindowDimension(Window);
-        GameUpdateAndRender(&Buffer, XOffset, YOffset);
         // RenderWeirdGradient(&GlobalBackBuffer, XOffset, YOffset);
         Win32DisplayBufferInWindow(&GlobalBackBuffer, DeviceContext,
                                    Dimension.Width, Dimension.Height);

@@ -1,8 +1,10 @@
 #pragma once
+#include <cmath>
 #include <stdint.h>
 #define internal static
 #define local_persist static
 #define global_variable static
+#define Pi32 3.14159265359f
 
 typedef uint8_t uint8;
 typedef uint16_t uint16;
@@ -19,6 +21,8 @@ typedef float real32;
 typedef double real64;
 
 struct game_offscreen_buffer {
+  // NOTE: Pixels are always 32-bits wide, Memory Order BB GG RR XX
+
   // BITMAPINFO Info;
   void *Memory;
   int Width;
@@ -26,5 +30,13 @@ struct game_offscreen_buffer {
   int Pitch;
   int BytesPerPixel = 4;
 };
-void GameUpdateAndRender(game_offscreen_buffer *Buffer, int XOffset,
-                         int YOffset);
+
+struct game_sound_output_buffer {
+  int SamplesPerSecond;
+  int SampleCount;
+  int16 *Samples;
+};
+
+internal void GameUpdateAndRender(game_offscreen_buffer *Buffer, int XOffset,
+                                  int YOffset,
+                                  game_sound_output_buffer *SoundBuffer);
